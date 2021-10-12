@@ -203,6 +203,7 @@ class FullyConnectedNet(object):
                                                                  size=(hidden_dims[self.num_layers-2], num_classes))
         self.params['b'+str(self.num_layers)
                     ] = np.zeros(num_classes)
+        # print(self.params['beta1'])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -271,11 +272,12 @@ class FullyConnectedNet(object):
                 input, cache[i] = affine_forward(
                     input, self.params['W'+str(i)], self.params['b'+str(i)])
                 input, batch_cache[i] = batchnorm_forward(
-                    input, self.bn_params['gamma'+str(i)], self.params['beta'+str(i)])
+                    input, self.params['gamma'+str(i)], self.params['beta'+str(i)], self.bn_params[i-1])
                 input, relu_cache[i] = relu_forward(input)
                 if self.use_dropout:
                     input, drop_cache[i] = dropout_forward(
                         input, self.dropout_param)
+            # print(self.params['beta'+str(i)])
         else:
             for i in range(1, self.num_layers):
                 input, cache[i] = affine_forward(
@@ -322,8 +324,8 @@ class FullyConnectedNet(object):
             dout = relu_backward(dout, relu_cache[i])
             if self.use_batchnorm:
                 dout, dgamma, dbeta = batchnorm_backward(dout, batch_cache[i])
-                grads['dgamma'+str(i)] = dgamma
-                grads['dbeta'+str(i)] = dbeta
+                grads['gamma'+str(i)] = dgamma
+                grads['beta'+str(i)] = dbeta
             dout,dw, db = affine_backward(dout, cache[i])
             grads['W'+str(i)] = dw + self.reg*self.params['W'+str(i)]
             grads['b'+str(i)] = db

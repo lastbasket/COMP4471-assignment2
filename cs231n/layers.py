@@ -200,7 +200,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         sample_mean = np.mean(x, 0)
         sample_var = np.var(x, 0)
-        norm_x = (x-sample_mean.T) / np.sqrt(sample_mean.T + eps)
+        norm_x = (x-sample_mean.T) / np.sqrt(sample_var.T + eps)
         out = gamma*norm_x+beta
 
         running_mean = momentum * running_mean + (1-momentum) * sample_mean
@@ -256,18 +256,29 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     sample_mean, sample_var, norm_x, gamma, beta, eps, x = cache
     N, D = x.shape
-    dnorm_x = dout*gamma
+
+    
+
     dbeta = np.sum(dout, 0)
     dgamma = np.sum(dout * norm_x, axis=0)
-    divar = np.sum(dnorm_x*sample_mean, axis=0)
-    dmean1 = dnorm_x * divar
-    dvar = 0.5 * 1 / \
-        (np.sqrt(sample_var + eps)) * \
-        (-1 / sample_var * divar)
-    dmean2 = 2 * sample_mean * (1 / N * np.ones((N, D)) * dvar)
+    dnorm_x = dout * gamma
+    
+    divar = np.sum(dnorm_x*(x-sample_mean), axis=0)
+
+    dmean1 = dnorm_x / np.sqrt(sample_var + eps)
+
+    dsqvar = -1 / (sample_var + eps) * divar
+    dvar = 0.5 * (1 / np.sqrt(sample_var + eps)) * dsqvar
+    
+    dxpe = np.ones_like(x) * dvar / N
+
+    dmean2 = 2 * (x-sample_mean) * dxpe
+
     dx1 = dmean1 + dmean2
-    dmean = -1 / N * np.sum(dmean1 + dmean2, 0)
-    dx2 = 1 / N * np.ones((N, D)) * dmean
+
+    dmean = -np.sum(dmean1 + dmean2, 0)
+    # print(dmean)
+    dx2 = 1 / N * np.ones_like(x) * dmean
     dx = dx1 + dx2
 
     ###########################################################################
@@ -305,9 +316,9 @@ def batchnorm_backward_alt(dout, cache):
     dgamma = np.sum(dout * norm_x, axis=0)
     dsample_var = np.sum(dnorm_x * (x-sample_mean) * (-0.5) * (
         sample_var + eps)**(-1.5), axis=0)
+    
     dsample_mean = np.sum(dnorm_x * (-1/np.sqrt(sample_var + eps)), axis=0) + dsample_var * (
         (np.sum(-2*(x-sample_mean))) / dout.shape[0])
-
     dx = dnorm_x * (1/np.sqrt(sample_var + eps)) + \
         dsample_var * (2*(x-sample_mean)/dout.shape[0]) + \
         dsample_mean/dout.shape[0]

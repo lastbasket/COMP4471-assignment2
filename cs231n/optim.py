@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.random.mtrand import beta
 
 """
 This file implements various first-order update rules that are commonly used
@@ -65,7 +66,18 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
-    pass
+    # print(config == None)
+    # print(config)
+    # print(config['velocity'])
+    # print(config.get('velocity'))
+    # print(config.get('velocity'))
+    # if not config.get('velocity'):
+      # config.setdefault('velocity', np.zeros_like(w))
+    momentum = config['momentum']
+    lr = config['learning_rate']
+
+    v = momentum * v - lr * dw
+    next_w = w + v
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -99,7 +111,15 @@ def rmsprop(x, dx, config=None):
     # in the next_x variable. Don't forget to update cache value stored in    #
     # config['cache'].                                                        #
     ###########################################################################
-    pass
+    decay_rate = config['decay_rate']
+    lr = config['learning_rate']
+    epsilon = config['epsilon']
+    cache = config['cache']
+
+    new_cache = decay_rate * cache + (1-decay_rate) * np.square(dx)
+    config['cache'] = new_cache
+
+    next_x = x - lr * dx / (np.sqrt(new_cache) + epsilon)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -136,7 +156,26 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables   #
     # stored in config.                                                       #
     ###########################################################################
-    pass
+    lr = config['learning_rate']
+    beta1 = config['beta1']
+    beta2 = config['beta2']
+    epsilon = config['epsilon']
+    m = config['m']
+    v = config['v']
+    t = config['t'] 
+
+    t += 1
+    config['t'] = t
+
+    new_m = beta1 * m + (1-beta1) * dx
+    new_v = beta2 * v +(1-beta2) * dx ** 2 
+    config['v'] = new_v
+    config['m'] = new_m
+
+    mc = new_m / (1-beta1 ** t)
+    vc = new_v / (1-beta2 ** t)
+
+    next_x = x - lr * mc / (np.sqrt(vc) + epsilon)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
